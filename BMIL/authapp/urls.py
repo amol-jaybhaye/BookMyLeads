@@ -3,6 +3,7 @@ from .views import SignUpView, SigninView, LogoutView, ProfileView
 from .views import LeadListCreateView, LeadRetrieveUpdateDeleteView
 from .views import ReviewListCreateView, ReviewRetrieveUpdateDeleteView
 from .views import WishlistView, CartView, download_lead_pdf, AddressView
+from .views import FillDetailsView, CreateOrderView, ProcessPaymentView
 
 urlpatterns = [
     path('signup/', SignUpView.as_view(), name='signup'),
@@ -19,4 +20,7 @@ urlpatterns = [
     path('cart/<int:lead_id>/', CartView.as_view(), name='cart-manage'),
     path("leads/download/<int:lead_id>/", download_lead_pdf, name="download_leads_pdf"),
     path('addresses/', AddressView.as_view(), name='addresses'),
+    path('orders/fill-details/', FillDetailsView.as_view(), name='fill-details'),
+    path('orders/', CreateOrderView.as_view(), name='create-order'),
+    path('orders/<int:order_id>/pay/', ProcessPaymentView.as_view(), name='process-payment'),
 ]

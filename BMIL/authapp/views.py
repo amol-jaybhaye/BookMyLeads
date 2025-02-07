@@ -18,6 +18,9 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
 import requests
+from .models import Order
+from .serializers import OrderSerializer
+from django.contrib.auth.models import User
 
 #SignUp
 class SignUpView(generics.CreateAPIView):
@@ -378,3 +381,39 @@ class AddressView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class FillDetailsView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "billing_address": user.profile.billing_address if hasattr(user, 'profile') else {},
+            "shipping_address": user.profile.shipping_address if hasattr(user, 'profile') else {},
+        })
+
+class CreateOrderView(generics.CreateAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            order = serializer.save(user=request.user)
+            return Response({"order_id": order.id, "message": "Order created successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProcessPaymentView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, order_id):
+        try:
+            order = Order.objects.get(id=order_id, user=request.user)
+            order.payment_status = "Paid"
+            order.save()
+            return Response({"order_id": order.id, "payment_status": "Paid", "message": "Payment successful"}, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
